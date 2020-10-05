@@ -1,0 +1,179 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>SettingsDialog</class>
+ <widget class="QDialog" name="SettingsDialog">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>400</width>
+    <height>300</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Limits</string>
+  </property>
+  <layout class="QVBoxLayout" name="verticalLayout">
+   <item>
+    <layout class="QGridLayout" name="gridLayout">
+     <item row="4" column="1">
+      <widget class="QSpinBox" name="peakDistortionMin"/>
+     </item>
+     <item row="4" column="2">
+      <widget class="QSpinBox" name="peakDistortionMax"/>
+     </item>
+     <item row="2" column="2">
+      <widget class="QSpinBox" name="peakPhaseMax"/>
+     </item>
+     <item row="1" column="0">
+      <widget class="QLabel" name="avgPhaseLabel">
+       <property name="text">
+        <string>Avg. phase</string>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="1">
+      <widget class="QLabel" name="minLabel">
+       <property name="text">
+        <string>Min</string>
+       </property>
+       <property name="alignment">
+        <set>Qt::AlignCenter</set>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="1">
+      <widget class="QSpinBox" name="avgPhaseMin"/>
+     </item>
+     <item row="4" column="0">
+      <widget class="QLabel" name="peakDistortionLabel">
+       <property name="text">
+        <string>Peak distortion</string>
+       </property>
+      </widget>
+     </item>
+     <item row="3" column="1">
+      <widget class="QSpinBox" name="avgDistortionMin"/>
+     </item>
+     <item row="5" column="0">
+      <widget class="QLabel" name="avgForceLabel">
+       <property name="text">
+        <string>Avg. force</string>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="0">
+      <widget class="QLabel" name="peakPhaseLabel">
+       <property name="text">
+        <string>Peak phase</string>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="2">
+      <widget class="QSpinBox" name="avgPhaseMax"/>
+     </item>
+     <item row="3" column="0">
+      <widget class="QLabel" name="avgDistortionLabel">
+       <property name="text">
+        <string>Avg. distortion</string>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="1">
+      <widget class="QSpinBox" name="peakPhaseMin"/>
+     </item>
+     <item row="0" column="2">
+      <widget class="QLabel" name="maxLabel">
+       <property name="text">
+        <string>Max</string>
+       </property>
+       <property name="alignment">
+        <set>Qt::AlignCenter</set>
+       </property>
+      </widget>
+     </item>
+     <item row="3" column="2">
+      <widget class="QSpinBox" name="avgDistortionMax"/>
+     </item>
+     <item row="6" column="0">
+      <widget class="QLabel" name="peakForceLabel">
+       <property name="text">
+        <string>Peak force</string>
+       </property>
+      </widget>
+     </item>
+     <item row="5" column="1">
+      <widget class="QSpinBox" name="avgForceMin"/>
+     </item>
+     <item row="5" column="2">
+      <widget class="QSpinBox" name="avgForceMax"/>
+     </item>
+     <item row="6" column="1">
+      <widget class="QSpinBox" name="peakForceMin"/>
+     </item>
+     <item row="6" column="2">
+      <widget class="QSpinBox" name="peakForceMax"/>
+     </item>
+    </layout>
+   </item>
+   <item>
+    <spacer name="verticalSpacer">
+     <property name="orientation">
+      <enum>Qt::Vertical</enum>
+     </property>
+     <property name="sizeHint" stdset="0">
+      <size>
+       <width>20</width>
+       <height>40</height>
+      </size>
+     </property>
+    </spacer>
+   </item>
+   <item>
+    <widget class="QDialogButtonBox" name="buttonBox">
+     <property name="orientation">
+      <enum>Qt::Horizontal</enum>
+     </property>
+     <property name="standardButtons">
+      <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
+     </property>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections>
+  <connection>
+   <sender>buttonBox</sender>
+   <signal>accepted()</signal>
+   <receiver>SettingsDialog</receiver>
+   <slot>accept()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>248</x>
+     <y>254</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>157</x>
+     <y>274</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>buttonBox</sender>
+   <signal>rejected()</signal>
+   <receiver>SettingsDialog</receiver>
+   <slot>reject()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>316</x>
+     <y>260</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>286</x>
+     <y>274</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
+</ui>
