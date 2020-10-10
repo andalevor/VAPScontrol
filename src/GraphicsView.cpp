@@ -23,3 +23,9 @@ void GraphicsView::mouseMoveEvent(QMouseEvent* event)
     emit mousePosChanged(mapToScene(event->pos()));
     QGraphicsView::mouseMoveEvent(event);
 }
+
+void GraphicsView::mouseDoubleClickEvent(QMouseEvent* event)
+{
+    emit mouseClicked(mapToScene(event->pos()));
+    QGraphicsView::mouseDoubleClickEvent(event);
+}

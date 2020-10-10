@@ -16,11 +16,17 @@ INCLUDEPATH += ./src
 
 # Input
 HEADERS += src/GraphicsView.hpp \
+           src/ColorDialog.hpp \
+           src/InfoDialog.hpp \
            src/MainWindow.hpp \
            src/SettingsDialog.hpp \
            src/VAPSrecord.hpp
-FORMS += src/MainWindow.ui src/SettingsDialog.ui
+FORMS += src/MainWindow.ui src/SettingsDialog.ui \
+    src/ColorDialog.ui \
+    src/InfoDialog.ui
 SOURCES += src/GraphicsView.cpp \
+           src/ColorDialog.cpp \
+           src/InfoDialog.cpp \
            src/main.cpp \
            src/MainWindow.cpp \
            src/SettingsDialog.cpp

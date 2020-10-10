@@ -11,10 +11,12 @@ public:
 
 signals:
     void mousePosChanged(QPointF p);
+    void mouseClicked(QPointF p);
 
 protected Q_SLOTS:
     void wheelEvent(QWheelEvent* event) override;
     void mouseMoveEvent(QMouseEvent* event) override;
+    void mouseDoubleClickEvent(QMouseEvent* event) override;
 };
 
 #endif // GRAPHICSVIEW_HPP

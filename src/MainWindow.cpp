@@ -1,34 +1,42 @@
 #include "MainWindow.hpp"
+#include "ColorDialog.hpp"
+#include "InfoDialog.hpp"
 #include "SettingsDialog.hpp"
 #include "VAPSrecord.hpp"
 #include "ui_MainWindow.h"
 #include <QDebug>
 #include <QFile>
+#include <QFileDialog>
+#include <QGraphicsItem>
 #include <QMessageBox>
 #include <QSettings>
 #include <QSqlError>
 #include <QSqlQuery>
 #include <QTextStream>
+#include <cmath>
 
 MainWindow::MainWindow(QWidget* parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
-    , db(QSqlDatabase::addDatabase("QSQLITE"))
-    , ellipse_size { 5 }
-    , good_pen((QColor(Qt::GlobalColor::green)))
-    , good_brush(Qt::GlobalColor::green)
-    , bad_pen((QColor(Qt::GlobalColor::red)))
-    , bad_brush(Qt::GlobalColor::red)
+    , aps_db(QSqlDatabase::addDatabase("QSQLITE"))
+    , vib_ellipse_size { 5 }
+    , search_radius { 25 }
+    , sps_ellipse_size { 25 }
+    , cross_size { 5 }
+    , selected { nullptr }
 {
-    db.setDatabaseName(":memory:");
+    aps_db.setDatabaseName(":memory:");
     settings_file_name = QApplication::applicationDirPath() + "/settings.ini";
     load_settings();
     ui->setupUi(this);
     ui->graphicsView->setScene(&scene);
     connect(ui->actionExit, SIGNAL(triggered()), QApplication::instance(), SLOT(quit()));
-    connect(ui->actionOpen, SIGNAL(triggered()), this, SLOT(open_file()));
+    connect(ui->actionOpen_APS, SIGNAL(triggered()), this, SLOT(open_aps_file()));
+    connect(ui->actionOpen_SPS, SIGNAL(triggered()), this, SLOT(open_sps_file()));
     connect(ui->graphicsView, SIGNAL(mousePosChanged(QPointF)), this, SLOT(change_statusbar(QPointF)));
+    connect(ui->graphicsView, SIGNAL(mouseClicked(QPointF)), this, SLOT(peek_point(QPointF)));
     connect(ui->actionLimits, SIGNAL(triggered()), this, SLOT(run_settings_dialog()));
+    connect(ui->actionColor_Size, SIGNAL(triggered()), this, SLOT(run_color_dialog()));
 }
 
 MainWindow::~MainWindow()
@@ -36,19 +44,21 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
-void MainWindow::open_file()
+void MainWindow::open_aps_file()
 {
-    if (db.isOpen()) {
-        db.close();
+    if (aps_db.isOpen()) {
+        aps_db.close();
     }
-    QString file_name = "/home/andalevor/Work/vaps/24092020apsver";
+    QString file_name = QFileDialog::getOpenFileName(this, tr("Open VAPS file"));
+    if (file_name.isEmpty())
+        return;
     QFile file(file_name);
     if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
         QMessageBox::critical(nullptr, "Error", "Can not read from " + file_name);
         return;
     }
     QTextStream in(&file);
-    if (!db.open()) {
+    if (!aps_db.open()) {
         QMessageBox::critical(nullptr, "Error", "Cannot create in memory database");
         exit(1);
     }
@@ -65,7 +75,7 @@ void MainWindow::open_file()
                "vib_pos_easting REAL, vib_pos_northing REAL, "
                "vib_pos_elevation REAL, shot_nb INTEGER, "
                "acquisition_nb INTEGER, two_digits_fleet_number INTEGER, "
-               "int_status_vib INTEGER, mass_1_warning TEXT, "
+               "vib_status_code INTEGER, mass_1_warning TEXT, "
                "mass_2_warning TEXT, mass_3_warning TEXT, "
                "plate_1_warning TEXT, plate_2_warning TEXT, "
                "plate_3_warning TEXT, plate_4_warning TEXT, "
@@ -93,7 +103,7 @@ void MainWindow::open_file()
                       "peak_force, avg_ground_stiffness, avg_ground_viscosity, "
                       "vib_pos_easting, vib_pos_northing, vib_pos_elevation, "
                       "shot_nb, acquisition_nb, two_digits_fleet_number, "
-                      "int_status_vib, mass_1_warning, mass_2_warning, "
+                      "vib_status_code, mass_1_warning, mass_2_warning, "
                       "mass_3_warning, plate_1_warning, plate_2_warning, "
                       "plate_3_warning, plate_4_warning, plate_5_warning, "
                       "plate_6_warning, force_overload, pressure_overload, "
@@ -277,33 +287,32 @@ void MainWindow::open_file()
         query.addBindValue(line.mid(150, 199)); // gpgga
         query.exec();
     }
-    draw_points();
+    redraw();
 }
 
-void MainWindow::draw_points()
+void MainWindow::draw_aps_points()
 {
-    if (!db.isOpen())
+    if (!aps_db.isOpen())
         return;
-    scene.clear();
     process_points();
-    scene.setBackgroundBrush(QBrush(Qt::black));
+    scene.setBackgroundBrush(QBrush(background_color));
     QPen pen;
     QBrush brush;
-    QSqlQuery query("SELECT vib_pos_easting, vib_pos_northing, good, draw FROM data", db);
+    QSqlQuery query("SELECT vib_pos_easting, vib_pos_northing, good, draw FROM data", aps_db);
     while (query.next()) {
         double vib_pos_easting = query.value(0).toDouble();
         double vib_pos_northing = query.value(1).toDouble();
         int good = query.value(2).toInt();
         int draw = query.value(3).toInt();
         if (good) {
-            pen = good_pen;
-            brush = good_brush;
+            pen = vib_good_pen;
+            brush = vib_good_brush;
         } else {
-            pen = bad_pen;
-            brush = bad_brush;
+            pen = vib_bad_pen;
+            brush = vib_bad_brush;
         }
         if (vib_pos_easting && vib_pos_northing && draw)
-            scene.addEllipse(vib_pos_easting - ellipse_size / 2, vib_pos_northing - ellipse_size / 2, ellipse_size, ellipse_size, pen, brush);
+            scene.addEllipse(vib_pos_easting - vib_ellipse_size / 2, -(vib_pos_northing + vib_ellipse_size / 2), vib_ellipse_size, vib_ellipse_size, pen, brush);
     }
 }
 
@@ -317,13 +326,12 @@ void MainWindow::change_statusbar(QPointF p)
     out.setFieldWidth(10);
     out << p.x() << " Y: ";
     out.setFieldWidth(10);
-    out << p.y();
+    out << -p.y();
     statusBar()->showMessage(s);
 }
 
 void MainWindow::run_settings_dialog()
 {
-    QSettings settings(settings_file_name, QSettings::IniFormat);
     SettingsDialog dialog;
     dialog.set_avg_phase_min(avg_phase_min);
     dialog.set_avg_phase_max(avg_phase_max);
@@ -340,6 +348,7 @@ void MainWindow::run_settings_dialog()
     int code = dialog.exec();
     if (!code)
         return;
+    QSettings settings(settings_file_name, QSettings::IniFormat);
     settings.beginGroup("Limits");
     avg_phase_min = dialog.avg_phase_min();
     settings.setValue("avg_phase_min", avg_phase_min);
@@ -372,37 +381,83 @@ void MainWindow::run_settings_dialog()
         QMessageBox::critical(nullptr, "Error", "Minimum value of one of limits is more or equal to maximum value");
         run_settings_dialog();
     }
-    draw_points();
+    redraw();
+}
+
+void MainWindow::run_color_dialog()
+{
+    ColorDialog dialog(background_color, vib_good_color, vib_bad_color, sps_color);
+    dialog.set_sps_cross_size(cross_size);
+    dialog.set_sps_ellipse_size(sps_ellipse_size);
+    dialog.set_vib_ellipse_size(vib_ellipse_size);
+    int code = dialog.exec();
+    if (!code)
+        return;
+    QSettings settings(settings_file_name, QSettings::IniFormat);
+    settings.beginGroup("Color_and_Size");
+    background_color = dialog.background;
+    settings.setValue("background", background_color);
+    vib_bad_color = dialog.vib_bad;
+    settings.setValue("vib_point_bad_color", vib_bad_color);
+    vib_good_color = dialog.vib_good;
+    settings.setValue("vib_point_good_color", vib_good_color);
+    sps_color = dialog.sps;
+    settings.setValue("sps_point_color", sps_color);
+    vib_ellipse_size = dialog.vib_ellipse_size();
+    settings.setValue("vib_ellipse_size", vib_ellipse_size);
+    sps_ellipse_size = dialog.sps_ellipse_size();
+    settings.setValue("sps_ellipse_size", sps_ellipse_size);
+    cross_size = dialog.sps_cross_size();
+    settings.setValue("sps_cross_size", cross_size);
+    settings.endGroup();
+    vib_bad_brush = QBrush(vib_bad_color);
+    vib_good_brush = QBrush(vib_good_color);
+    vib_bad_pen = QPen(vib_bad_color);
+    vib_good_pen = QPen(vib_good_color);
+    redraw();
 }
 
 void MainWindow::load_settings()
 {
     QSettings settings(settings_file_name, QSettings::IniFormat);
     settings.beginGroup("Limits");
-    avg_phase_min = settings.value("avg_phase_min").toInt();
-    avg_phase_max = settings.value("avg_phase_max").toInt();
-    peak_phase_min = settings.value("peak_phase_min").toInt();
-    peak_phase_max = settings.value("peak_phase_max").toInt();
-    avg_distortion_min = settings.value("avg_distortion_min").toInt();
-    avg_distortion_max = settings.value("avg_distortion_max").toInt();
-    peak_distortion_min = settings.value("peak_distortion_min").toInt();
-    peak_distortion_max = settings.value("peak_distortion_max").toInt();
-    avg_force_min = settings.value("avg_force_min").toInt();
-    avg_force_max = settings.value("avg_force_max").toInt();
-    peak_force_min = settings.value("peak_force_min").toInt();
-    peak_force_max = settings.value("peak_force_max").toInt();
+    avg_phase_min = settings.value("avg_phase_min", 0).toInt();
+    avg_phase_max = settings.value("avg_phase_max", 5).toInt();
+    peak_phase_min = settings.value("peak_phase_min", 0).toInt();
+    peak_phase_max = settings.value("peak_phase_max", 15).toInt();
+    avg_distortion_min = settings.value("avg_distortion_min", 0).toInt();
+    avg_distortion_max = settings.value("avg_distortion_max", 25).toInt();
+    peak_distortion_min = settings.value("peak_distortion_min", 0).toInt();
+    peak_distortion_max = settings.value("peak_distortion_max", 35).toInt();
+    avg_force_min = settings.value("avg_force_min", 0).toInt();
+    avg_force_max = settings.value("avg_force_max", 99).toInt();
+    peak_force_min = settings.value("peak_force_min", 0).toInt();
+    peak_force_max = settings.value("peak_force_max", 99).toInt();
     settings.endGroup();
+    settings.beginGroup("Color_and_Size");
+    background_color = settings.value("background", QColor(Qt::black)).value<QColor>();
+    vib_bad_color = settings.value("vib_point_bad_color", QColor(Qt::red)).value<QColor>();
+    vib_good_color = settings.value("vib_point_good_color", QColor(Qt::green)).value<QColor>();
+    sps_color = settings.value("sps_point_color", QColor(Qt::yellow)).value<QColor>();
+    vib_ellipse_size = settings.value("vib_ellipse_size", 5).toInt();
+    sps_ellipse_size = settings.value("sps_ellipse_size", 25).toInt();
+    cross_size = settings.value("sps_cross_size", 5).toInt();
+    settings.endGroup();
+    vib_bad_brush = QBrush(vib_bad_color);
+    vib_good_brush = QBrush(vib_good_color);
+    vib_bad_pen = QPen(vib_bad_color);
+    vib_good_pen = QPen(vib_good_color);
 }
 
 void MainWindow::process_points()
 {
     // take unique names to process all acuisitions from this shot point at once
-    QSqlQuery names_query("SELECT DISTINCT line_name, point_number FROM data", db);
+    QSqlQuery names_query("SELECT DISTINCT line_name, point_number FROM data", aps_db);
     names_query.exec();
     while (names_query.next()) {
         int line_name = names_query.value(0).toInt();
         int point_number = names_query.value(1).toInt();
-        QSqlQuery sp_query(db);
+        QSqlQuery sp_query(aps_db);
         sp_query.prepare("SELECT acquisition_nb, vib_number, day_of_year, hour, minute, second, "
                          "avg_phase, peak_phase, avg_distortion, peak_distortion, avg_force, peak_force, id "
                          "FROM data WHERE line_name = ? AND point_number = ? "
@@ -430,7 +485,7 @@ void MainWindow::process_points()
             curr_id = sp_query.value(12).toInt();
             // check if some vib from this acuisition was out of limits
             bool good = true;
-            QSqlQuery check_query(db);
+            QSqlQuery check_query(aps_db);
             check_query.prepare("SELECT good FROM data WHERE line_name = ? AND point_number = ? "
                                 "AND day_of_year = ? AND hour = ? AND minute = ? AND second = ?");
             check_query.addBindValue(line_name);
@@ -443,7 +498,7 @@ void MainWindow::process_points()
             while (check_query.next())
                 if (!check_query.value(0).toInt())
                     good = false;
-            QSqlQuery mark_query(db);
+            QSqlQuery mark_query(aps_db);
             mark_query.prepare("UPDATE data SET good = ?, draw = 1 WHERE id = ?");
             // if one of vib was out of limits than mark all other vibs as bad also
             if (good) {
@@ -482,4 +537,159 @@ void MainWindow::process_points()
             prev_id = curr_id;
         }
     }
+}
+
+void MainWindow::peek_point(QPointF p)
+{
+    if (!aps_db.isOpen())
+        return;
+    QSqlQuery query(aps_db);
+    p = QPointF(p.x(), -p.y());
+    query.prepare("SELECT line_name, point_number, avg_phase, peak_phase, "
+                  "avg_distortion, peak_distortion, avg_force, peak_force, "
+                  "vib_pos_easting, vib_pos_northing, id FROM data "
+                  "WHERE vib_pos_easting > ? AND vib_pos_easting < ? "
+                  "AND vib_pos_northing > ? AND vib_pos_northing < ?");
+    query.addBindValue(p.x() - search_radius);
+    query.addBindValue(p.x() + search_radius);
+    query.addBindValue(p.y() - search_radius);
+    query.addBindValue(p.y() + search_radius);
+    query.exec();
+    bool first = true;
+    int line_name, point_number;
+    double vib_x, vib_y;
+    double dist;
+    while (query.next()) {
+        double curr_x = query.value(8).toDouble();
+        double curr_y = query.value(9).toDouble();
+        if (first) {
+            first = false;
+            line_name = query.value(0).toInt();
+            point_number = query.value(1).toInt();
+            vib_x = curr_x;
+            vib_y = curr_y;
+            dist = sqrt(pow(p.x() - curr_x, 2) + pow(p.y() - curr_y, 2));
+            continue;
+        }
+        double curr_dist = sqrt(pow(p.x() - curr_x, 2) + pow(p.y() - curr_y, 2));
+        if (dist > curr_dist) {
+            dist = curr_dist;
+            line_name = query.value(0).toInt();
+            point_number = query.value(1).toInt();
+            vib_x = curr_x;
+            vib_y = curr_y;
+        }
+    }
+    QPen pen((QColor(Qt::cyan)));
+    selected = scene.addEllipse(vib_x - vib_ellipse_size / 2, vib_y - vib_ellipse_size / 2, vib_ellipse_size, vib_ellipse_size, pen);
+    query.prepare("SELECT line_name, point_number, vib_number, avg_phase, peak_phase, "
+                  "avg_distortion, peak_distortion, avg_force, peak_force, shot_nb, "
+                  "acquisition_nb, vib_status_code, day_of_year, hour, minute, second "
+                  "FROM data WHERE line_name = ? AND point_number = ? "
+                  "ORDER BY day_of_year DESC, hour DESC, minute DESC, second DESC, acquisition_nb DESC, vib_number DESC");
+    query.addBindValue(line_name);
+    query.addBindValue(point_number);
+    query.exec();
+    InfoDialog dialog;
+    while (query.next()) {
+        VAPSrecord r;
+        r.line_name = QPair<int, bool>(query.value(0).toInt(), true);
+        r.point_number = QPair<int, bool>(query.value(1).toInt(), true);
+        r.vib_number = QPair<int, bool>(query.value(2).toInt(), true);
+        int avg_phase = query.value(3).toInt();
+        bool good = true;
+        if (avg_phase < avg_phase_min || avg_phase > avg_phase_max)
+            good = false;
+        r.avg_phase = QPair<int, bool>(avg_phase, good);
+        int peak_phase = query.value(4).toInt();
+        good = true;
+        if (peak_phase < peak_phase_min || peak_phase > peak_phase_max)
+            good = false;
+        r.peak_phase = QPair<int, bool>(peak_phase, good);
+        int avg_distortion = query.value(5).toInt();
+        good = true;
+        if (avg_distortion < avg_distortion_min || avg_distortion > avg_distortion_max)
+            good = false;
+        r.avg_distortion = QPair<int, bool>(avg_distortion, good);
+        int peak_distortion = query.value(6).toInt();
+        good = true;
+        if (peak_distortion < peak_distortion_min || peak_distortion > peak_distortion_max)
+            good = false;
+        r.peak_distortion = QPair<int, bool>(peak_distortion, good);
+        int avg_force = query.value(7).toInt();
+        good = true;
+        if (avg_force < avg_force_min || avg_force > avg_force_max)
+            good = false;
+        r.avg_force = QPair<int, bool>(avg_force, good);
+        int peak_force = query.value(8).toInt();
+        good = true;
+        if (peak_force < peak_force_min || peak_force > peak_force_max)
+            good = false;
+        r.peak_force = QPair<int, bool>(peak_force, good);
+        r.shot_nb = QPair<int, bool>(query.value(9).toInt(), true);
+        r.acquisition_nb = QPair<int, bool>(query.value(10).toInt(), true);
+        r.vib_status_code = QPair<int, bool>(query.value(11).toInt(), true);
+        r.day_of_year = QPair<int, bool>(query.value(12).toInt(), true);
+        r.hour = QPair<int, bool>(query.value(13).toInt(), true);
+        r.minute = QPair<int, bool>(query.value(14).toInt(), true);
+        r.second = QPair<int, bool>(query.value(15).toInt(), true);
+        dialog.add_row(r);
+    }
+    dialog.exec();
+    if (selected) {
+        scene.removeItem(selected);
+        delete selected;
+        selected = nullptr;
+    }
+}
+
+void MainWindow::open_sps_file()
+{
+    QString file_name = QFileDialog::getOpenFileName(this, tr("Open Source SPS file"));
+    if (file_name.isEmpty())
+        return;
+    QFile s_sps_file(file_name);
+    if (!s_sps_file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        QMessageBox::critical(nullptr, "Error", "Can not read S SPS file");
+        QApplication::quit();
+    }
+    QTextStream in(&s_sps_file);
+    while (!in.atEnd()) {
+        QString str = in.readLine();
+        if (str.startsWith('S')) {
+            bool ok = true;
+            double x = str.mid(46, 9).toDouble(&ok);
+            if (!ok) {
+                QMessageBox::critical(nullptr, "Error", "Can not read X coordinate (47, 55) from S SPS file: " + str);
+                exit(1);
+            }
+            double y = str.mid(55, 10).toDouble(&ok);
+            if (!ok) {
+                QMessageBox::critical(nullptr, "Error", "Can not read Y coordinate (56, 65) from S SPS file: " + str);
+                exit(1);
+            }
+            sps_points.push_back(QPair<double, double>(x, y));
+        }
+    }
+    redraw();
+}
+
+void MainWindow::draw_sps_points()
+{
+    if (sps_points.isEmpty())
+        return;
+    QPen el_pen(sps_color);
+    QPen cross_pen(sps_color);
+    for (QPair<double, double>& p : sps_points) {
+        scene.addEllipse(p.first - sps_ellipse_size / 2, -(p.second + sps_ellipse_size / 2), sps_ellipse_size, sps_ellipse_size, el_pen);
+        scene.addLine(p.first - cross_size / 2, -p.second, p.first + cross_size / 2, -p.second, cross_pen);
+        scene.addLine(p.first, -(p.second - cross_size / 2), p.first, -(p.second + cross_size / 2), cross_pen);
+    }
+}
+
+void MainWindow::redraw()
+{
+    scene.clear();
+    draw_aps_points();
+    draw_sps_points();
 }
