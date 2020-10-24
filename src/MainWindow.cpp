@@ -30,6 +30,7 @@ MainWindow::MainWindow(QWidget* parent)
     load_settings();
     ui->setupUi(this);
     ui->graphicsView->setScene(&scene);
+    ui->actionAbout_VAPScontrol->setIcon(QIcon::fromTheme("SP_DialogApplyButton"));
     connect(ui->actionExit, SIGNAL(triggered()), QApplication::instance(), SLOT(quit()));
     connect(ui->actionOpen_APS, SIGNAL(triggered()), this, SLOT(open_aps_file()));
     connect(ui->actionOpen_SPS, SIGNAL(triggered()), this, SLOT(open_sps_file()));
@@ -37,6 +38,8 @@ MainWindow::MainWindow(QWidget* parent)
     connect(ui->graphicsView, SIGNAL(mouseClicked(QPointF)), this, SLOT(peek_point(QPointF)));
     connect(ui->actionLimits, SIGNAL(triggered()), this, SLOT(run_settings_dialog()));
     connect(ui->actionColor_Size, SIGNAL(triggered()), this, SLOT(run_color_dialog()));
+    connect(ui->actionAbout, SIGNAL(triggered()), this, SLOT(show_about_author()));
+    connect(ui->actionAbout_VAPScontrol, SIGNAL(triggered()), this, SLOT(show_about_vapscontrol()));
 }
 
 MainWindow::~MainWindow()
@@ -54,12 +57,12 @@ void MainWindow::open_aps_file()
         return;
     QFile file(file_name);
     if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-        QMessageBox::critical(nullptr, "Error", "Can not read from " + file_name);
+        QMessageBox::critical(nullptr, tr("Error"), tr("Can not read from ") + file_name);
         return;
     }
     QTextStream in(&file);
     if (!aps_db.open()) {
-        QMessageBox::critical(nullptr, "Error", "Cannot create in memory database");
+        QMessageBox::critical(nullptr, tr("Error"), tr("Cannot create in memory database"));
         exit(1);
     }
     QSqlQuery query;
@@ -116,113 +119,113 @@ void MainWindow::open_aps_file()
         query.addBindValue(line.mid(0, 1)); // record_id
         query.addBindValue(static_cast<int>(line.mid(1, 16).replace(',', '.').toDouble(&ok))); // line_name
         if (!ok) {
-            QMessageBox::critical(nullptr, "Error", "On line " + QString::number(counter) + ".<br>Can not read line name (2, 17):<br>" + line.mid(1, 16));
+            QMessageBox::critical(nullptr, tr("Error"), tr("On line ") + QString::number(counter) + tr(".<br>Can not read line name (2, 17):<br>") + line.mid(1, 16));
             exit(1);
         }
         query.addBindValue(static_cast<int>(line.mid(17, 8).replace(',', '.').toDouble(&ok))); // point_number
         if (!ok) {
-            QMessageBox::critical(nullptr, "Error", "On line " + QString::number(counter) + ".<br>Can not read point number (18, 25):<br>" + line.mid(17, 8));
+            QMessageBox::critical(nullptr, tr("Error"), tr("On line ") + QString::number(counter) + tr(".<br>Can not read point number (18, 25):<br>") + line.mid(17, 8));
             exit(1);
         }
         query.addBindValue(line.mid(25, 1).toInt(&ok)); // point_index
         if (!ok) {
-            QMessageBox::critical(nullptr, "Error", "On line " + QString::number(counter) + ".<br>Can not read point index (26, 26):<br>" + line.mid(25, 1));
+            QMessageBox::critical(nullptr, tr("Error"), tr("On line ") + QString::number(counter) + tr(".<br>Can not read point index (26, 26):<br>") + line.mid(25, 1));
             exit(1);
         }
         query.addBindValue(line.mid(26, 1).toInt(&ok)); // fleet_number
         if (!ok) {
-            QMessageBox::critical(nullptr, "Error", "On line " + QString::number(counter) + ".<br>Can not read fleet number (27, 27):<br>" + line.mid(26, 1));
+            QMessageBox::critical(nullptr, tr("Error"), tr("On line ") + QString::number(counter) + tr(".<br>Can not read fleet number (27, 27):<br>") + line.mid(26, 1));
             exit(1);
         }
         query.addBindValue(line.mid(27, 2).toInt(&ok)); // vib_number
         if (!ok) {
-            QMessageBox::critical(nullptr, "Error", "On line " + QString::number(counter) + ".<br>Can not read vibrator number (28, 29):<br>" + line.mid(27, 2));
+            QMessageBox::critical(nullptr, tr("Error"), tr("On line ") + QString::number(counter) + tr(".<br>Can not read vibrator number (28, 29):<br>") + line.mid(27, 2));
             exit(1);
         }
         query.addBindValue(line.mid(29, 3).toInt(&ok)); // vib_drive_level
         if (!ok) {
-            QMessageBox::critical(nullptr, "Error", "On line " + QString::number(counter) + ".<br>Can not read vibrator drive level (30, 32):<br>" + line.mid(29, 3));
+            QMessageBox::critical(nullptr, tr("Error"), tr("On line ") + QString::number(counter) + tr(".<br>Can not read vibrator drive level (30, 32):<br>") + line.mid(29, 3));
             exit(1);
         }
         int avg_phase = line.mid(32, 4).toInt(&ok); // avg_phase
         query.addBindValue(avg_phase);
         if (!ok) {
-            QMessageBox::critical(nullptr, "Error", "On line " + QString::number(counter) + ".<br>Can not read average phase (33, 36):<br>" + line.mid(32, 4));
+            QMessageBox::critical(nullptr, tr("Error"), tr("On line ") + QString::number(counter) + tr(".<br>Can not read average phase (33, 36):<br>") + line.mid(32, 4));
             exit(1);
         }
         int peak_phase = line.mid(36, 4).toInt(&ok); // peak_phase
         query.addBindValue(peak_phase);
         if (!ok) {
-            QMessageBox::critical(nullptr, "Error", "On line " + QString::number(counter) + ".<br>Can not read peak phase (37, 40):<br>" + line.mid(36, 4));
+            QMessageBox::critical(nullptr, tr("Error"), tr("On line ") + QString::number(counter) + tr(".<br>Can not read peak phase (37, 40):<br>") + line.mid(36, 4));
             exit(1);
         }
         int avg_distortion = line.mid(40, 2).toInt(&ok); // avg_distortion
         query.addBindValue(avg_distortion);
         if (!ok) {
-            QMessageBox::critical(nullptr, "Error", "On line " + QString::number(counter) + ".<br>Can not read average distortion (41, 42):<br>" + line.mid(40, 2));
+            QMessageBox::critical(nullptr, tr("Error"), tr("On line ") + QString::number(counter) + tr(".<br>Can not read average distortion (41, 42):<br>") + line.mid(40, 2));
             exit(1);
         }
         int peak_distortion = line.mid(42, 2).toInt(&ok); // peak_distortion
         query.addBindValue(peak_distortion);
         if (!ok) {
-            QMessageBox::critical(nullptr, "Error", "On line " + QString::number(counter) + ".<br>Can not read peak distortion (43, 44):<br>" + line.mid(42, 2));
+            QMessageBox::critical(nullptr, tr("Error"), tr("On line ") + QString::number(counter) + tr(".<br>Can not read peak distortion (43, 44):<br>") + line.mid(42, 2));
             exit(1);
         }
         int avg_force = line.mid(44, 2).toInt(&ok); // avg_force
         query.addBindValue(avg_force);
         if (!ok) {
-            QMessageBox::critical(nullptr, "Error", "On line " + QString::number(counter) + ".<br>Can not read average force (45, 46):<br>" + line.mid(44, 2));
+            QMessageBox::critical(nullptr, tr("Error"), tr("On line ") + QString::number(counter) + tr(".<br>Can not read average force (45, 46):<br>") + line.mid(44, 2));
             exit(1);
         }
         int peak_force = line.mid(46, 3).toInt(&ok); // peak_force
         query.addBindValue(peak_force);
         if (!ok) {
-            QMessageBox::critical(nullptr, "Error", "On line " + QString::number(counter) + ".<br>Can not read peak force (47, 49):<br>" + line.mid(46, 3));
+            QMessageBox::critical(nullptr, tr("Error"), tr("On line ") + QString::number(counter) + tr(".<br>Can not read peak force (47, 49):<br>") + line.mid(46, 3));
             exit(1);
         }
         query.addBindValue(line.mid(49, 3).toInt(&ok)); // avg_ground_stiffness
         if (!ok) {
-            QMessageBox::critical(nullptr, "Error", "On line " + QString::number(counter) + ".<br>Can not read average ground stiffness (50, 52):<br>" + line.mid(49, 3));
+            QMessageBox::critical(nullptr, tr("Error"), tr("On line ") + QString::number(counter) + tr(".<br>Can not read average ground stiffness (50, 52):<br>") + line.mid(49, 3));
             exit(1);
         }
         query.addBindValue(line.mid(52, 3).toInt(&ok)); // avg_ground_viscosity
         if (!ok) {
-            QMessageBox::critical(nullptr, "Error", "On line " + QString::number(counter) + ".<br>Can not read average ground viscosity (53, 55):<br>" + line.mid(52, 3));
+            QMessageBox::critical(nullptr, tr("Error"), tr("On line ") + QString::number(counter) + tr(".<br>Can not read average ground viscosity (53, 55):<br>") + line.mid(52, 3));
             exit(1);
         }
         query.addBindValue(line.mid(55, 9).replace(',', '.').toDouble(&ok)); // vib_pos_easting
         if (!ok) {
-            QMessageBox::critical(nullptr, "Error", "On line " + QString::number(counter) + ".<br>Can not read vib. position easting (56, 64):<br>" + line.mid(55, 9));
+            QMessageBox::critical(nullptr, tr("Error"), tr("On line ") + QString::number(counter) + tr(".<br>Can not read vib. position easting (56, 64):<br>") + line.mid(55, 9));
             exit(1);
         }
         query.addBindValue(line.mid(64, 10).replace(',', '.').toDouble(&ok)); // vib_pos_northing
         if (!ok) {
-            QMessageBox::critical(nullptr, "Error", "On line " + QString::number(counter) + ".<br>Can not read vib. position northing (65, 74):<br>" + line.mid(64, 10));
+            QMessageBox::critical(nullptr, tr("Error"), tr("On line ") + QString::number(counter) + tr(".<br>Can not read vib. position northing (65, 74):<br>") + line.mid(64, 10));
             exit(1);
         }
         query.addBindValue(line.mid(74, 6).replace(',', '.').toDouble(&ok)); // vib_pos_elevation
         if (!ok) {
-            QMessageBox::critical(nullptr, "Error", "On line " + QString::number(counter) + ".<br>Can not read vib. position elevation (75, 80):<br>" + line.mid(74, 6));
+            QMessageBox::critical(nullptr, tr("Error"), tr("On line ") + QString::number(counter) + tr(".<br>Can not read vib. position elevation (75, 80):<br>") + line.mid(74, 6));
             exit(1);
         }
         query.addBindValue(line.mid(81, 5).toLongLong(&ok)); // shot_np
         if (!ok) {
-            QMessageBox::critical(nullptr, "Error", "On line " + QString::number(counter) + ".<br>Can not read shot nb (82, 86):<br>" + line.mid(81, 5));
+            QMessageBox::critical(nullptr, tr("Error"), tr("On line ") + QString::number(counter) + tr(".<br>Can not read shot nb (82, 86):<br>") + line.mid(81, 5));
             exit(1);
         }
         query.addBindValue(line.mid(86, 2).toInt(&ok)); // acquisition_nb
         if (!ok) {
-            QMessageBox::critical(nullptr, "Error", "On line " + QString::number(counter) + ".<br>Can not read aquisition nb (87, 88):<br>" + line.mid(86, 2));
+            QMessageBox::critical(nullptr, tr("Error"), tr("On line ") + QString::number(counter) + tr(".<br>Can not read aquisition nb (87, 88):<br>") + line.mid(86, 2));
             exit(1);
         }
         query.addBindValue(line.mid(88, 2).toInt(&ok)); // two_digits_fleet_number
         if (!ok) {
-            QMessageBox::critical(nullptr, "Error", "On line " + QString::number(counter) + ".<br>Can not read 2 digits fleet number (89, 90):<br>" + line.mid(88, 2));
+            QMessageBox::critical(nullptr, tr("Error"), tr("On line ") + QString::number(counter) + tr(".<br>Can not read 2 digits fleet number (89, 90):<br>") + line.mid(88, 2));
             exit(1);
         }
         query.addBindValue(line.mid(90, 2).toInt(&ok)); // int_status_vib
         if (!ok) {
-            QMessageBox::critical(nullptr, "Error", "On line " + QString::number(counter) + ".<br>Can not read vib status code (91, 92):<br>" + line.mid(90, 2));
+            QMessageBox::critical(nullptr, tr("Error"), tr("On line ") + QString::number(counter) + tr(".<br>Can not read vib status code (91, 92):<br>") + line.mid(90, 2));
             exit(1);
         }
         query.addBindValue(line.mid(93, 1)); // mass_1_warning
@@ -241,14 +244,14 @@ void MainWindow::open_aps_file()
         query.addBindValue(line.mid(109, 1)); // excitation_overload
         query.addBindValue(line.mid(110, 2).toInt(&ok)); // stacking_fold
         if (!ok) {
-            QMessageBox::critical(nullptr, "Error", "On line " + QString::number(counter) + ".<br>Can not read stacking fold (111, 112):<br>" + line.mid(110, 2));
+            QMessageBox::critical(nullptr, tr("Error"), tr("On line ") + QString::number(counter) + tr(".<br>Can not read stacking fold (111, 112):<br>") + line.mid(110, 2));
             exit(1);
         }
         query.addBindValue(line.mid(112, 1)); // computation_domain
         query.addBindValue(line.mid(113, 4)); // ve432_version
         query.addBindValue(line.mid(117, 3).toInt(&ok)); // day_of_year
         if (!ok) {
-            QMessageBox::critical(nullptr, "Error", "On line " + QString::number(counter) + ".<br>Can not read day of year (118, 120):<br>" + line.mid(117, 3));
+            QMessageBox::critical(nullptr, tr("Error"), tr("On line ") + QString::number(counter) + tr(".<br>Can not read day of year (118, 120):<br>") + line.mid(117, 3));
             exit(1);
         }
         QString h = line.mid(120, 2);
@@ -257,7 +260,7 @@ void MainWindow::open_aps_file()
         else
             query.addBindValue(h.toInt(&ok)); // hour
         if (!ok) {
-            QMessageBox::critical(nullptr, "Error", "On line " + QString::number(counter) + ".<br>Can not read hour (121, 122):<br>" + line.mid(120, 2));
+            QMessageBox::critical(nullptr, tr("Error"), tr("On line ") + QString::number(counter) + tr(".<br>Can not read hour (121, 122):<br>") + line.mid(120, 2));
             exit(1);
         }
         QString m = line.mid(122, 2);
@@ -266,7 +269,7 @@ void MainWindow::open_aps_file()
         else
             query.addBindValue(m.toInt(&ok)); // minute
         if (!ok) {
-            QMessageBox::critical(nullptr, "Error", "On line " + QString::number(counter) + ".<br>Can not read minute (123, 124):<br>" + line.mid(122, 2));
+            QMessageBox::critical(nullptr, tr("Error"), tr("On line ") + QString::number(counter) + tr(".<br>Can not read minute (123, 124):<br>") + line.mid(122, 2));
             exit(1);
         }
         QString s = line.mid(124, 2);
@@ -275,12 +278,12 @@ void MainWindow::open_aps_file()
         else
             query.addBindValue(s.toInt(&ok)); // second
         if (!ok) {
-            QMessageBox::critical(nullptr, "Error", "On line " + QString::number(counter) + ".<br>Can not read second (125, 126):<br>" + line.mid(124, 2));
+            QMessageBox::critical(nullptr, tr("Error"), tr("On line ") + QString::number(counter) + tr(".<br>Can not read second (125, 126):<br>") + line.mid(124, 2));
             exit(1);
         }
         query.addBindValue(line.mid(126, 4).replace(',', '.').toDouble(&ok)); // hdop
         if (!ok) {
-            QMessageBox::critical(nullptr, "Error", "On line " + QString::number(counter) + ".<br>Can not read HDOP (127, 130):<br>" + line.mid(126, 4));
+            QMessageBox::critical(nullptr, tr("Error"), tr("On line ") + QString::number(counter) + tr(".<br>Can not read HDOP (127, 130):<br>") + line.mid(126, 4));
             exit(1);
         }
         query.addBindValue(line.mid(130, 20)); // tb_date
@@ -378,7 +381,7 @@ void MainWindow::run_settings_dialog()
     while (avg_phase_min >= avg_phase_max || peak_phase_min >= peak_phase_max
         || avg_distortion_min >= avg_distortion_max || peak_distortion_min >= peak_distortion_max
         || avg_force_min >= avg_force_max || peak_force_min >= peak_force_max) {
-        QMessageBox::critical(nullptr, "Error", "Minimum value of one of limits is more or equal to maximum value");
+        QMessageBox::critical(nullptr, tr("Error"), tr("Minimum value of one of limits is more or equal to maximum value"));
         run_settings_dialog();
     }
     redraw();
@@ -386,7 +389,7 @@ void MainWindow::run_settings_dialog()
 
 void MainWindow::run_color_dialog()
 {
-    ColorDialog dialog(background_color, vib_good_color, vib_bad_color, sps_color);
+    ColorDialog dialog(background_color, vib_good_color, vib_bad_color, sps_color, language);
     dialog.set_sps_cross_size(cross_size);
     dialog.set_sps_ellipse_size(sps_ellipse_size);
     dialog.set_vib_ellipse_size(vib_ellipse_size);
@@ -409,6 +412,8 @@ void MainWindow::run_color_dialog()
     settings.setValue("sps_ellipse_size", sps_ellipse_size);
     cross_size = dialog.sps_cross_size();
     settings.setValue("sps_cross_size", cross_size);
+    language = dialog.language;
+    settings.setValue("language", language);
     settings.endGroup();
     vib_bad_brush = QBrush(vib_bad_color);
     vib_good_brush = QBrush(vib_good_color);
@@ -442,11 +447,16 @@ void MainWindow::load_settings()
     vib_ellipse_size = settings.value("vib_ellipse_size", 5).toInt();
     sps_ellipse_size = settings.value("sps_ellipse_size", 25).toInt();
     cross_size = settings.value("sps_cross_size", 5).toInt();
+    language = settings.value("language", "English").toString();
     settings.endGroup();
     vib_bad_brush = QBrush(vib_bad_color);
     vib_good_brush = QBrush(vib_good_color);
     vib_bad_pen = QPen(vib_bad_color);
     vib_good_pen = QPen(vib_good_color);
+    if (language == "Russian")
+        translator.load("VAPScontrol_ru");
+    QCoreApplication* a = QCoreApplication::instance();
+    a->installTranslator(&translator);
 }
 
 void MainWindow::process_points()
@@ -650,7 +660,7 @@ void MainWindow::open_sps_file()
         return;
     QFile s_sps_file(file_name);
     if (!s_sps_file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-        QMessageBox::critical(nullptr, "Error", "Can not read S SPS file");
+        QMessageBox::critical(nullptr, tr("Error"), tr("Can not read S SPS file"));
         QApplication::quit();
     }
     QTextStream in(&s_sps_file);
@@ -660,12 +670,12 @@ void MainWindow::open_sps_file()
             bool ok = true;
             double x = str.mid(46, 9).toDouble(&ok);
             if (!ok) {
-                QMessageBox::critical(nullptr, "Error", "Can not read X coordinate (47, 55) from S SPS file: " + str);
+                QMessageBox::critical(nullptr, tr("Error"), tr("Can not read X coordinate (47, 55) from S SPS file: ") + str);
                 exit(1);
             }
             double y = str.mid(55, 10).toDouble(&ok);
             if (!ok) {
-                QMessageBox::critical(nullptr, "Error", "Can not read Y coordinate (56, 65) from S SPS file: " + str);
+                QMessageBox::critical(nullptr, tr("Error"), tr("Can not read Y coordinate (56, 65) from S SPS file: ") + str);
                 exit(1);
             }
             sps_points.push_back(QPair<double, double>(x, y));
@@ -692,4 +702,19 @@ void MainWindow::redraw()
     scene.clear();
     draw_aps_points();
     draw_sps_points();
+}
+
+void MainWindow::show_about_author()
+{
+    QMessageBox::about(this, tr("About author"), tr("Andrei Voronin<br><a href=\"mailto:andrei.a.voronin@gmail.com\">Send email</a>"));
+}
+
+void MainWindow::show_about_vapscontrol()
+{
+    QMessageBox::about(this, tr("About VAPScontrol"), tr("This program can read VAPS file and draw with different colors<br>"
+                                                         "each vibrator position from each acquisition depending on limits.<br>"
+                                                         "If out of limits acquisition later was replaced by acquisition<br>"
+                                                         "in limits program won't draw it.<br><br>"
+
+                                                         "Also it is possible to load S SPS file."));
 }

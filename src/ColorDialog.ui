@@ -7,19 +7,19 @@
     <x>0</x>
     <y>0</y>
     <width>400</width>
-    <height>300</height>
+    <height>302</height>
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Dialog</string>
+   <string>Appearance</string>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <item>
     <layout class="QGridLayout" name="gridLayout">
-     <item row="2" column="0">
-      <widget class="QLabel" name="vibBadColorLabel">
+     <item row="4" column="1">
+      <widget class="QPushButton" name="spsColorBut">
        <property name="text">
-        <string>Vibrator out of limits color</string>
+        <string/>
        </property>
       </widget>
      </item>
@@ -37,17 +37,33 @@
        </property>
       </widget>
      </item>
-     <item row="5" column="0">
-      <widget class="QLabel" name="spsEllSizeLabel">
+     <item row="3" column="1">
+      <widget class="QSpinBox" name="vibSizeSpin"/>
+     </item>
+     <item row="5" column="1">
+      <widget class="QSpinBox" name="spsEllSizeSpin"/>
+     </item>
+     <item row="6" column="1">
+      <widget class="QSpinBox" name="spsCrossSizeSpin"/>
+     </item>
+     <item row="1" column="0">
+      <widget class="QLabel" name="vibGoodColorLabel">
        <property name="text">
-        <string>SPS ellipse size</string>
+        <string>Vibrator in limits color</string>
        </property>
       </widget>
      </item>
-     <item row="0" column="0">
-      <widget class="QLabel" name="backColorLabel">
+     <item row="2" column="0">
+      <widget class="QLabel" name="vibBadColorLabel">
        <property name="text">
-        <string>Background color</string>
+        <string>Vibrator out of limits color</string>
+       </property>
+      </widget>
+     </item>
+     <item row="3" column="0">
+      <widget class="QLabel" name="vibSizeLabel">
+       <property name="text">
+        <string>Vibrator size</string>
        </property>
       </widget>
      </item>
@@ -65,6 +81,13 @@
        </property>
       </widget>
      </item>
+     <item row="0" column="0">
+      <widget class="QLabel" name="backColorLabel">
+       <property name="text">
+        <string>Background color</string>
+       </property>
+      </widget>
+     </item>
      <item row="2" column="1">
       <widget class="QPushButton" name="vibBadBut">
        <property name="text">
@@ -72,35 +95,22 @@
        </property>
       </widget>
      </item>
-     <item row="4" column="1">
-      <widget class="QPushButton" name="spsColorBut">
+     <item row="5" column="0">
+      <widget class="QLabel" name="spsEllSizeLabel">
        <property name="text">
-        <string/>
+        <string>SPS ellipse size</string>
        </property>
       </widget>
      </item>
-     <item row="1" column="0">
-      <widget class="QLabel" name="vibGoodColorLabel">
+     <item row="7" column="0">
+      <widget class="QLabel" name="language">
        <property name="text">
-        <string>Vibrator in limits color</string>
+        <string>Language</string>
        </property>
       </widget>
      </item>
-     <item row="3" column="0">
-      <widget class="QLabel" name="vibSizeLabel">
-       <property name="text">
-        <string>Vibrator size</string>
-       </property>
-      </widget>
-     </item>
-     <item row="3" column="1">
-      <widget class="QSpinBox" name="vibSizeSpin"/>
-     </item>
-     <item row="5" column="1">
-      <widget class="QSpinBox" name="spsEllSizeSpin"/>
-     </item>
-     <item row="6" column="1">
-      <widget class="QSpinBox" name="spsCrossSizeSpin"/>
+     <item row="7" column="1">
+      <widget class="QComboBox" name="langCombo"/>
      </item>
     </layout>
    </item>

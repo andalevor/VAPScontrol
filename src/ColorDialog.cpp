@@ -1,13 +1,15 @@
 #include "ColorDialog.hpp"
 #include "ui_ColorDialog.h"
 #include <QColorDialog>
-
-ColorDialog::ColorDialog(QColor bg, QColor vg, QColor vb, QColor s, QWidget* parent)
+#include <QDebug>
+#include <QTranslator>
+ColorDialog::ColorDialog(QColor bg, QColor vg, QColor vb, QColor s, QString l, QWidget* parent)
     : QDialog(parent)
     , background(bg)
     , vib_good(vg)
     , vib_bad(vb)
     , sps(s)
+    , language(l)
     , ui(new Ui::ColorDialog)
 {
     ui->setupUi(this);
@@ -28,10 +30,17 @@ ColorDialog::ColorDialog(QColor bg, QColor vg, QColor vb, QColor s, QWidget* par
     ui->spsColorBut->setAutoFillBackground(true);
     ui->spsColorBut->setPalette(pal);
     ui->spsColorBut->update();
+    ui->langCombo->addItem("English");
+    ui->langCombo->addItem("Russian");
+    if (language == "English")
+        ui->langCombo->setCurrentIndex(0);
+    else if (language == "Russian")
+        ui->langCombo->setCurrentIndex(1);
     connect(ui->backColorBut, SIGNAL(clicked()), this, SLOT(background_color_changed()));
     connect(ui->vibGoodBut, SIGNAL(clicked()), this, SLOT(vib_good_color_changed()));
     connect(ui->vibBadBut, SIGNAL(clicked()), this, SLOT(vib_bad_color_changed()));
     connect(ui->spsColorBut, SIGNAL(clicked()), this, SLOT(sps_color_changed()));
+    connect(ui->langCombo, SIGNAL(currentIndexChanged(int)), this, SLOT(lang_selection_changed(int)));
 }
 
 ColorDialog::~ColorDialog()
@@ -119,4 +128,16 @@ void ColorDialog::set_sps_ellipse_size(int s)
 void ColorDialog::set_sps_cross_size(int s)
 {
     ui->spsCrossSizeSpin->setValue(s);
+}
+
+void ColorDialog::lang_selection_changed(int i)
+{
+    switch (i) {
+    case 0:
+        language = "English";
+        break;
+    case 1:
+        language = "Russian";
+        break;
+    }
 }

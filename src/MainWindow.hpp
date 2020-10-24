@@ -5,6 +5,7 @@
 #include <QGraphicsScene>
 #include <QMainWindow>
 #include <QtSql/QSqlDatabase>
+#include <QTranslator>
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -26,6 +27,8 @@ public slots:
     void run_settings_dialog();
     void run_color_dialog();
     void peek_point(QPointF p);
+    void show_about_author();
+    void show_about_vapscontrol();
 
 private:
     Ui::MainWindow* ui;
@@ -44,7 +47,9 @@ private:
     QColor vib_good_color, vib_bad_color, background_color, sps_color;
     QBrush vib_good_brush, vib_bad_brush;
     QPen vib_good_pen, vib_bad_pen;
+    QString language;
     QGraphicsItem* selected;
+    QTranslator translator;
 
     void load_settings();
     void process_points();
